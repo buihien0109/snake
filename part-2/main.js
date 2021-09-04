@@ -1,8 +1,12 @@
 //Setting the canvas
+const gameOverEle = document.querySelector(".game-over");
+const btnPlayAgain = document.getElementById("btn-play-again");
+const scoreEle = document.getElementById("score");
+
 const canvas = document.getElementById("canvas");
 canvas.width = 600;
 canvas.height = 600;
-canvas.style.border = '1px solid gray';
+canvas.style.border = "20px solid #ddd";
 
 const ctx = canvas.getContext("2d");
 
@@ -14,162 +18,162 @@ let blockSize = 20;
 let widthInBlocks = width / blockSize;
 let heightInBlocks = height / blockSize;
 
-
-//Utility function
-function drawBorder() {
-    ctx.fillStyle = "grey";
-    ctx.fillRect(0, 0, width, blockSize);
-    ctx.fillRect(width - blockSize, 0, blockSize, height);
-    ctx.fillRect(0, 0, blockSize, height);
-    ctx.fillRect(0, height - blockSize, width, blockSize);
-}
-
 function drawScore() {
-    ctx.font = "bold 20px Arial";
-    ctx.fillStyle = "black";
-    ctx.fillText(`Điểm: ${score}`, blockSize * 2, blockSize * 3);
+  ctx.font = "bold 20px Arial";
+  ctx.fillStyle = "black";
+  ctx.fillText(`Điểm: ${score}`, blockSize * 1, blockSize * 2);
 }
 
+// Class Block
 class Block {
-    constructor(col, row) {
-        this.col = col;
-        this.row = row
-    }
-    drawSquare(color) {
-        let x = this.col * blockSize;
-        let y = this.row * blockSize;
+  constructor(col, row) {
+    this.col = col;
+    this.row = row;
+  }
+  drawSquare(color) {
+    let x = this.col * blockSize;
+    let y = this.row * blockSize;
 
-        ctx.beginPath();
-        ctx.fillStyle = color;
-        ctx.rect(x, y, blockSize, blockSize);
-        ctx.fill();
-    }
+    ctx.beginPath();
+    ctx.fillStyle = color;
+    ctx.rect(x, y, blockSize, blockSize);
+    ctx.fill();
+  }
 
-    drawCircle(color) {
-        // Tính toán vị trí tâm
-        let centerX = this.col * blockSize + blockSize / 2;
-        let centerY = this.row * blockSize + blockSize / 2;
+  drawCircle(color) {
+    // Tính toán vị trí tâm
+    let centerX = this.col * blockSize + blockSize / 2;
+    let centerY = this.row * blockSize + blockSize / 2;
 
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, blockSize / 2, 0 , Math.PI * 2, false);
-        ctx.fill();
-    }
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, blockSize / 2, 0, Math.PI * 2, false);
+    ctx.fill();
+  }
 
-    equal(otherBlock) {
-        return this.col === otherBlock.col && this.row === otherBlock.row;
-    }
+  equal(otherBlock) {
+    return this.col === otherBlock.col && this.row === otherBlock.row;
+  }
 }
 
-// class Food
+// Class Food
 class Food {
-    constructor(color) {
-        this.position = new Block(10, 10);
-        this.color = color;
-    }
+  constructor(color) {
+    this.position = new Block(10, 10);
+    this.color = color;
+  }
 
-    draw() {
-        this.position.drawCircle(this.color);
-    }
+  draw() {
+    this.position.drawCircle(this.color);
+  }
 
-    move() {
-        let randomCol = Math.floor(Math.random() * (widthInBlocks - 2) + 1);
-        let randomRow = Math.floor(Math.random() * (heightInBlocks - 2) + 1);
+  move() {
+    let randomCol = Math.floor(Math.random() * (widthInBlocks - 2) + 1);
+    let randomRow = Math.floor(Math.random() * (heightInBlocks - 2) + 1);
 
-        this.position = new Block(randomCol, randomRow);
-    }
+    this.position = new Block(randomCol, randomRow);
+  }
 }
 
 // Class Snake
 class Snake {
-    constructor(color) {
-        this.segments = [new Block(7,5), new Block(6,5), new Block(5,5)];
-        this.color = color;
-        this.direction = "right";
+  constructor(color) {
+    this.segments = [new Block(7, 5), new Block(6, 5), new Block(5, 5)];
+    this.color = color;
+    this.direction = "right";
+  }
+
+  draw() {
+    this.segments.forEach((segment) => segment.drawSquare(this.color));
+    this.segments[0].drawSquare("green");
+  }
+
+  move() {
+    let head = this.segments[0];
+    let newHead;
+
+    if (this.direction == "right") {
+      newHead = new Block(head.col + 1, head.row);
+    } else if (this.direction == "down") {
+      newHead = new Block(head.col, head.row + 1);
+    } else if (this.direction == "left") {
+      newHead = new Block(head.col - 1, head.row);
+    } else if (this.direction == "up") {
+      newHead = new Block(head.col, head.row - 1);
     }
 
-    draw() {
-        this.segments.forEach(segment => segment.drawSquare(this.color));
-        this.segments[0].drawSquare('green');
+    if (this.checkCollision(newHead)) {
+      gameOver();
+      return;
     }
 
-    move() {
-        let head = this.segments[0];
-        let newHead;
+    this.segments.unshift(newHead);
 
-        if(this.direction == 'right') {
-            newHead = new Block(head.col + 1, head.row);
-        } else if(this.direction == 'down') {
-            newHead = new Block(head.col, head.row + 1);
-        } else if(this.direction == 'left') {
-            newHead = new Block(head.col - 1, head.row);
-        } else if(this.direction == 'up') {
-            newHead = new Block(head.col, head.row - 1);
-        }
+    if (newHead.equal(food.position)) {
+      score++;
+      food.move();
+    } else {
+      this.segments.pop();
+    }
+  }
 
-        if(this.checkCollision(newHead)) {
-            gameOver();
-            return;
-        }
+  setDirection(newDirection) {
+    if (
+      (this.direction == "up" && newDirection == "down") ||
+      (this.direction == "left" && newDirection == "right") ||
+      (this.direction == "down" && newDirection == "up") ||
+      (this.direction == "right" && newDirection == "left")
+    )
+      return;
 
-        this.segments.unshift(newHead);
+    this.direction = newDirection;
+  }
 
-        if(newHead.equal(food.position)) {
-            score++;
-            food.move();
-        } else {
-            this.segments.pop();
-        }
+  checkCollision(head) {
+    // Kiểm tra va chạm với thành game Board
+    let left = head.col < 0;
+    let top = head.row < 0;
+    let right = head.col > widthInBlocks - 1;
+    let bottom = head.row > heightInBlocks - 1;
+    let wallCollision = left || top || right || bottom;
+
+    // Kiểm tra va chạm với thân snake
+    let selfCollision = false;
+    for (let i = 0; i < this.segments.length; i++) {
+      if (head.equal(this.segments[i])) {
+        selfCollision = true;
+      }
     }
 
-    setDirection(newDirection) {
-        if(
-            this.direction == "up" && newDirection == "down" ||
-            this.direction == "left" && newDirection == "right" ||
-            this.direction == "down" && newDirection == "up" ||
-            this.direction == "right" && newDirection == "left"
-        ) return
-        
-        this.direction = newDirection;
-    }
-
-    checkCollision(head) {
-        // Kiểm tra va chạm với thành game Board
-        let left = head.col === 0;
-        let top = head.row === 0;
-        let right = head.col == widthInBlocks - 1;
-        let bottom = head.row == heightInBlocks - 1;
-        let wallCollision = left || top || right || bottom
-
-        let selfCollision = false;
-        for(let i=0; i<this.segments.length; i++) {
-            if(head.equal(this.segments[i])) {
-                selfCollision = true;
-            }
-        }
-
-        return wallCollision || selfCollision;
-    }
+    return wallCollision || selfCollision;
+  }
 }
 
+// Game over => Hiển thị thông tin điểm người chơi
 function gameOver() {
-    console.log('End game');
-    clearInterval(interval);
+  gameOverEle.style.display = "flex";
+  scoreEle.innerText = score;
+  clearInterval(interval);
 }
+
+// Chơi lại game
+btnPlayAgain.addEventListener("click", function () {
+  window.location.reload();
+});
 
 let directions = {
-    37: "left",
-    38: "up",
-    39: "right",
-    40: "down"
-}
+  37: "left",
+  38: "up",
+  39: "right",
+  40: "down",
+};
 
-document.addEventListener('keydown', function(e) {
-    let newDirection = directions[e.keyCode];
-    if(newDirection) {
-        snake.setDirection(newDirection);
-    }
-})
+document.addEventListener("keydown", function (e) {
+  let newDirection = directions[e.keyCode];
+  if (newDirection) {
+    snake.setDirection(newDirection);
+  }
+});
 
 let score;
 let snake;
@@ -178,22 +182,23 @@ let interval;
 
 //Start Game function
 function init() {
-    score = 0;
+  // Khởi tạo điểm
+  score = 0;
 
-    // let block = new Block(4, 5);
-    // block.drawCircle('red');
-    snake = new Snake('yellow');
-    food = new Food('red');
+  // Khởi tạo đối tượng snake + food
+  snake = new Snake("yellow");
+  food = new Food("red");
 
-    interval = setInterval(function() {
-        ctx.clearRect(0, 0, width, height);
-        drawScore();
-        drawBorder();
+  // Tạo game loop
+  interval = setInterval(function () {
+    ctx.clearRect(0, 0, width, height);
+    drawScore();
 
-        snake.draw();
-        snake.move();
-        food.draw();
-    },100)
+    snake.draw();
+    snake.move();
+
+    food.draw();
+  }, 100);
 }
 
 window.onload = init;
